@@ -17,7 +17,7 @@ WORKDIR /root/
 
 COPY --from=builder /app/${GITHUB_PATH}/bin/analytics-service .
 
-RUN chown root:root task-service
+RUN chown root:root analytics-service
 
 EXPOSE 3000
 
