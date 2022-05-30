@@ -1,11 +1,24 @@
-FROM golang:1.17-buster as builder
+# Builder
+ARG GITHUB_PATH=gitlab.com/g6834/team17/analytics-service
 
-WORKDIR /app
-COPY go.* ./
-RUN go mod download
-COPY . ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o application
+FROM golang:1.18-alpine as builder
 
-FROM alpine:3.15.4
-COPY --from=builder /app/application /app/application
-CMD ["/app/application"]
+WORKDIR /app/${GITHUB_PATH}
+
+RUN apk add --update make git curl
+COPY Makefile Makefile
+COPY . .
+RUN make build
+
+# Mail server
+FROM alpine:latest as server
+LABEL org.opencontainers.image.source https://${GITHUB_PATH}
+WORKDIR /root/
+
+COPY --from=builder /app/${GITHUB_PATH}/bin/analytics-service .
+
+RUN chown root:root task-service
+
+EXPOSE 3000
+
+CMD ["./analytics-service"]
