@@ -15,21 +15,32 @@ import (
 )
 
 const httpPort string = ":8080"
+const kafkaTopic = "task"
+const app_name = `mok_task_service`
+const host_ip = `lol_hz`
 
 func main() {
 	log.SetLevel(log.DebugLevel)
+	ctx := context.Background()
 
 	repo := repository.New()
+	defer repo.Pool.Close()
 	service := services.New(repo)
 	handler := handlers.New(service)
 	server := http.Server{
 		Addr:    httpPort,
 		Handler: handler.NewMux(),
 	}
-
+	kafkaHandler, err := handlers.NewKafkaHandler(service)
+	if err != nil {
+		log.Fatalf("structure sucks: %s", err)
+	}
+	defer func() { _ = (*kafkaHandler.ConsumerGroup).Close() }()
+	defer func() { _ = (*kafkaHandler.Client).Close() }()
 	done := make(chan struct{})
 
 	go start(&server)
+	go consume(ctx, kafkaHandler, kafkaTopic)
 	shutdown(&server, done)
 
 	<-done
@@ -57,5 +68,31 @@ func shutdown(srv *http.Server, done chan struct{}) {
 	}()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.WithField("func", "shutdown").Fatalf("Server shutdown failed: %s", err)
+	}
+}
+
+func consume(ctx context.Context, h *handlers.KafkaHandler, topics ...string) {
+	var errCnt int64
+	for {
+		if err := (*h.ConsumerGroup).Consume(ctx, topics, h.Consumer); err != nil {
+			log.WithFields(log.Fields{
+				"app_name":    app_name,
+				"host_ip":     host_ip,
+				"logger_name": "main.CG.Consume_loop",
+			}).Errorf("error consuming: %s", err)
+			errCnt++
+			if errCnt >= 300 {
+				log.Error("TOO MUCH ERRORS")
+				break
+			}
+		}
+		if err := ctx.Err(); err != nil {
+			log.WithFields(log.Fields{
+				"app_name":    app_name,
+				"host_ip":     host_ip,
+				"logger_name": "main.CG.Consume_loop",
+			}).Errorf("context catch error: %s. Stop consuming", err)
+			break
+		}
 	}
 }
