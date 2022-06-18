@@ -15,6 +15,7 @@ import (
 )
 
 const httpPort string = ":8080"
+const httpProfilePort = `:8085`
 const kafkaTopic = "task"
 const app_name = `mok_task_service`
 const host_ip = `lol_hz`
@@ -31,6 +32,12 @@ func main() {
 		Addr:    httpPort,
 		Handler: handler.NewMux(),
 	}
+
+	profileServer := http.Server{
+		Addr:    httpProfilePort,
+		Handler: handlers.NewProfiler(),
+	}
+
 	kafkaHandler, err := handlers.NewKafkaHandler(service)
 	if err != nil {
 		log.Fatalf("structure sucks: %s", err)
@@ -39,16 +46,18 @@ func main() {
 	defer func() { _ = (*kafkaHandler.Client).Close() }()
 	done := make(chan struct{})
 
-	go start(&server)
+	go start(&server, httpPort)
+	go start(&profileServer, httpProfilePort)
 	go consume(ctx, kafkaHandler, kafkaTopic)
 	shutdown(&server, done)
+	shutdown(&profileServer, done)
 
 	<-done
 	log.WithField("func:", "main").Println("Server stopped gracefully")
 }
 
-func start(srv *http.Server) {
-	log.WithField("func", "start").Debugf("Server started listening on port %s", httpPort)
+func start(srv *http.Server, port string) {
+	log.WithField("func", "start").Debugf("Server started listening on port %s", port)
 	err := srv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.WithField("func", "start").Fatalf("Server failed unexpectidly with error: %s", err)
