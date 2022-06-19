@@ -54,11 +54,20 @@ func (h handler) getSignedCount(w http.ResponseWriter, r *http.Request) {
 			"logger_name":  fn,
 		}).Warn(err)
 		w.WriteHeader(http.StatusBadRequest)
-		_, err = w.Write([]byte("error occurred"))
+		_, _ = w.Write([]byte("error occurred"))
 		return
 	}
 
 	_, err = w.Write([]byte(fmt.Sprintln(count)))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"appName":      appName,
+			"hostIP":       hostIP,
+			"requestId":    middleware.GetReqID(r.Context()),
+			"request_path": r.URL.Path,
+			"logger_name":  fn,
+		}).Warnf("error write response: %s", err)
+	}
 
 	log.WithField("func", fn).Debug("request served")
 }
@@ -77,10 +86,20 @@ func (h handler) getNotSignedYetCount(w http.ResponseWriter, r *http.Request) {
 			"logger_name":  fn,
 		}).Warn(err)
 		w.WriteHeader(http.StatusBadRequest)
-		_, err = w.Write([]byte("error occurred"))
+		_, _ = w.Write([]byte("error occurred"))
 		return
 	}
 	_, err = w.Write([]byte(fmt.Sprintln(count)))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"appName":      appName,
+			"hostIP":       hostIP,
+			"requestId":    middleware.GetReqID(r.Context()),
+			"request_path": r.URL.Path,
+			"logger_name":  fn,
+		}).Warnf("error write response: %s", err)
+	}
+
 	log.WithField("func", fn).Debug("request served")
 }
 
@@ -97,7 +116,7 @@ func (h handler) getSignitionTotalTime(w http.ResponseWriter, r *http.Request) {
 			"logger_name":  fn,
 		}).Debug("no task id provided")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("provide task UUID as URL parameter"))
+		_, _ = w.Write([]byte("provide task UUID as URL parameter"))
 		return
 	}
 	t, err := h.s.GetSignitionTotalTime(taskUUID)
@@ -111,10 +130,20 @@ func (h handler) getSignitionTotalTime(w http.ResponseWriter, r *http.Request) {
 			"logger_name":  fn,
 		}).Debug(err)
 		w.WriteHeader(http.StatusBadRequest)
-		_, err = w.Write([]byte("error occurred"))
+		_, _ = w.Write([]byte("error occurred"))
 		return
 	}
 	_, err = w.Write([]byte(fmt.Sprintf("time in sec: %d", t)))
+	if err != nil {
+		log.WithFields(log.Fields{
+			"appName":      appName,
+			"hostIP":       hostIP,
+			"requestId":    middleware.GetReqID(r.Context()),
+			"request_path": r.URL.Path,
+			"logger_name":  fn,
+		}).Warnf("error write response: %s", err)
+	}
+
 	log.WithField("func", fn).Debug("request served")
 }
 
