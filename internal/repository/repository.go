@@ -15,13 +15,14 @@ type repo struct {
 
 func New() *repo {
 	pool := postgres.New()
+
 	return &repo{Pool: pool}
 }
 
 const errBeginTx = `error begin transaction`
 const errCommitTx = `error commit transaction`
-const errAddToDb = `error adding data to db`
-const errRetrieveFromDb = `error retrieving data from db`
+const errAddToDB = `error adding data to db`
+const errRetrieveFromDB = `error retrieving data from db`
 
 const saveQuery = `INSERT INTO task_events (task_uuid, event, user_uuid, timestamp)
 					VALUES ($1, $2, $3, $4);`
@@ -44,7 +45,7 @@ func (r repo) Save(e domain.Event) error {
 
 	res, err := tx.Exec(ctx, saveQuery, e.TaskUUID, e.EventType, e.UserUUID, e.Timestamp)
 	if err != nil || res.RowsAffected() == 0 {
-		return fmt.Errorf("%s: %w", errAddToDb, err)
+		return fmt.Errorf("%s: %w", errAddToDB, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -58,13 +59,15 @@ const getSignedCountQuery = `SELECT count(task_uuid) FROM task_events WHERE
 							event = 'signed';`
 
 func (r repo) GetSignedCount() (int, error) {
-	ctx := context.TODO()
 	var count int
+
+	ctx := context.TODO()
 	txOpts := pgx.TxOptions{
 		IsoLevel:       pgx.ReadCommitted,
 		AccessMode:     pgx.ReadOnly,
 		DeferrableMode: pgx.NotDeferrable,
 	}
+
 	tx, err := r.Pool.BeginTx(ctx, txOpts)
 	defer func() { _ = tx.Rollback(ctx) }()
 	if err != nil {
@@ -73,7 +76,7 @@ func (r repo) GetSignedCount() (int, error) {
 
 	row := tx.QueryRow(ctx, getSignedCountQuery)
 	if err := row.Scan(&count); err != nil {
-		return 0, fmt.Errorf("%s: %w", errRetrieveFromDb, err)
+		return 0, fmt.Errorf("%s: %w", errRetrieveFromDB, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -93,13 +96,15 @@ const getUnsignedCountQuery = `(SELECT (total - signed) FROM
 								) AS unsigned);`
 
 func (r repo) GetNotSignedYetCount() (int, error) {
-	ctx := context.TODO()
 	var count int
+
+	ctx := context.TODO()
 	txOpts := pgx.TxOptions{
 		IsoLevel:       pgx.ReadCommitted,
 		AccessMode:     pgx.ReadOnly,
 		DeferrableMode: pgx.NotDeferrable,
 	}
+
 	tx, err := r.Pool.BeginTx(ctx, txOpts)
 	defer func() { _ = tx.Rollback(ctx) }()
 	if err != nil {
@@ -108,7 +113,7 @@ func (r repo) GetNotSignedYetCount() (int, error) {
 
 	row := tx.QueryRow(ctx, getUnsignedCountQuery)
 	if err := row.Scan(&count); err != nil {
-		return 0, fmt.Errorf("%s: %w", errRetrieveFromDb, err)
+		return 0, fmt.Errorf("%s: %w", errRetrieveFromDB, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -125,8 +130,9 @@ const getSignTimeQuery = `SELECT EXTRACT(EPOCH FROM
 			) AS total_time));`
 
 func (r repo) GetSignitionTotalTime(taskUUID string) (int, error) {
-	ctx := context.TODO()
 	var Sec float64
+
+	ctx := context.TODO()
 	txOpts := pgx.TxOptions{
 		IsoLevel:       pgx.ReadCommitted,
 		AccessMode:     pgx.ReadOnly,
@@ -140,7 +146,7 @@ func (r repo) GetSignitionTotalTime(taskUUID string) (int, error) {
 
 	row := tx.QueryRow(ctx, getSignTimeQuery, taskUUID)
 	if err := row.Scan(&Sec); err != nil {
-		return 0, fmt.Errorf("%s: %w", errRetrieveFromDb, err)
+		return 0, fmt.Errorf("%s: %w", errRetrieveFromDB, err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

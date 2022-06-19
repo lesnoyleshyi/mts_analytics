@@ -24,6 +24,7 @@ func (m Msg) Encode() ([]byte, error) {
 	b.WriteString(`", "timestamp": "`)
 	b.WriteString(m.Timestamp.Format(time.RFC3339))
 	b.WriteString(`"}`)
+
 	return []byte(b.String()), nil
 }
 
@@ -41,8 +42,6 @@ func NewSyncProducer() (sarama.SyncProducer, error) {
 	config.ClientID = "mok_for_task_service"
 	producer, err := sarama.NewSyncProducer(brokers, config)
 
-	//producer.
-
 	//prt, offs, err := producer.SendMessage()
 
 	return producer, err
@@ -58,13 +57,4 @@ func NewAsyncProducer() (sarama.AsyncProducer, error) {
 	producer, err := sarama.NewAsyncProducer(brokers, config)
 
 	return producer, err
-}
-
-func prepareMsg(topic string, message Msg) *sarama.ProducerMessage {
-	msg := sarama.ProducerMessage{
-		Topic:     topic,
-		Partition: -1,
-		Value:     message,
-	}
-	return &msg
 }

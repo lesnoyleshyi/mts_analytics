@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-const app_name = `analytics`
-const host_ip = `127.0.0.1`
+const appName = `analytics`
+const hostIP = `127.0.0.1`
 
 type service interface {
 	Save(event domain.Event) error
@@ -43,40 +43,44 @@ func (h handler) NewMux() http.Handler {
 
 func (h handler) getSignedCount(w http.ResponseWriter, r *http.Request) {
 	fn := "handlers_getSignedCount"
+
 	count, err := h.s.GetSignedCount()
 	if err != nil {
 		log.WithFields(log.Fields{
-			"app_name":     app_name,
-			"host_ip":      host_ip,
+			"appName":      appName,
+			"hostIP":       hostIP,
 			"requestId":    middleware.GetReqID(r.Context()),
 			"request_path": r.URL.Path,
 			"logger_name":  fn,
 		}).Warn(err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error occurred"))
+		_, err = w.Write([]byte("error occurred"))
 		return
 	}
-	w.Write([]byte(fmt.Sprintln(count)))
+
+	_, err = w.Write([]byte(fmt.Sprintln(count)))
+
 	log.WithField("func", fn).Debug("request served")
 }
 
 func (h handler) getNotSignedYetCount(w http.ResponseWriter, r *http.Request) {
 	fn := "handlers_getNotSignedYetCount"
+
 	count, err := h.s.GetNotSignedYetCount()
 	if err != nil {
 		log.WithFields(log.Fields{
-			"app_name":     app_name,
-			"host_ip":      host_ip,
+			"appName":      appName,
+			"hostIP":       hostIP,
 			"timestamp":    time.Now().Format(time.RFC3339),
 			"requestId":    middleware.GetReqID(r.Context()),
 			"request_path": r.URL.Path,
 			"logger_name":  fn,
 		}).Warn(err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error occurred"))
+		_, err = w.Write([]byte("error occurred"))
 		return
 	}
-	w.Write([]byte(fmt.Sprintln(count)))
+	_, err = w.Write([]byte(fmt.Sprintln(count)))
 	log.WithField("func", fn).Debug("request served")
 }
 
@@ -85,8 +89,8 @@ func (h handler) getSignitionTotalTime(w http.ResponseWriter, r *http.Request) {
 	taskUUID := r.URL.Query().Get("id")
 	if taskUUID == "" {
 		log.WithFields(log.Fields{
-			"app_name":     app_name,
-			"host_ip":      host_ip,
+			"appName":      appName,
+			"hostIP":       hostIP,
 			"timestamp":    time.Now().Format(time.RFC3339),
 			"requestId":    middleware.GetReqID(r.Context()),
 			"request_path": r.URL.Path,
@@ -99,18 +103,18 @@ func (h handler) getSignitionTotalTime(w http.ResponseWriter, r *http.Request) {
 	t, err := h.s.GetSignitionTotalTime(taskUUID)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"app_name":     app_name,
-			"host_ip":      host_ip,
+			"appName":      appName,
+			"hostIP":       hostIP,
 			"timestamp":    time.Now().Format(time.RFC3339),
 			"requestId":    middleware.GetReqID(r.Context()),
 			"request_path": r.URL.Path,
 			"logger_name":  fn,
 		}).Debug(err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("error occurred"))
+		_, err = w.Write([]byte("error occurred"))
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("time in sec: %d", t)))
+	_, err = w.Write([]byte(fmt.Sprintf("time in sec: %d", t)))
 	log.WithField("func", fn).Debug("request served")
 }
 
@@ -120,8 +124,8 @@ func validateToken(next http.Handler) http.Handler {
 		token := r.Header.Get("Authorization")
 		if token == "" {
 			log.WithFields(log.Fields{
-				"app_name":     app_name,
-				"host_ip":      host_ip,
+				"appName":      appName,
+				"hostIP":       hostIP,
 				"timestamp":    time.Now().Format(time.RFC3339),
 				"requestId":    middleware.GetReqID(r.Context()),
 				"request_path": r.URL.Path,

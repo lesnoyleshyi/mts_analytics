@@ -27,8 +27,8 @@ type eventConsumer struct {
 
 func (c eventConsumer) Setup(s sarama.ConsumerGroupSession) error {
 	log.WithFields(log.Fields{
-		"app_name":    app_name,
-		"host_ip":     host_ip,
+		"appName":     appName,
+		"hostIp":      hostIP,
 		"logger_name": "kafka_handler.Setup",
 	}).Debugf("Setup() hook is called. Consumer #%d with cluster member ID %s will consume messages",
 		c.id, s.MemberID())
@@ -38,30 +38,34 @@ func (c eventConsumer) Setup(s sarama.ConsumerGroupSession) error {
 
 func (c eventConsumer) ConsumeClaim(s sarama.ConsumerGroupSession, cl sarama.ConsumerGroupClaim) error {
 	log.WithFields(log.Fields{
-		"app_name":    app_name,
-		"host_ip":     host_ip,
+		"appName":     appName,
+		"hostIp":      hostIP,
 		"logger_name": "kafka_handler.ConsumeClaim",
 	}).Debug("A claim was assigned. Start Processing messages")
+
 	for msg := range cl.Messages() {
 		var event domain.Event
+
 		log.WithFields(log.Fields{
-			"app_name":    app_name,
-			"host_ip":     host_ip,
+			"appName":     appName,
+			"hostIp":      hostIP,
 			"logger_name": "kafka_handler.ConsumeClaim",
 		}).Debugf("message got: %s. Partition: %d, offset: %d, topic: %s, ts: %s",
 			msg.Value, msg.Partition, msg.Offset, msg.Topic, msg.Timestamp.Format(time.RFC3339))
+
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
 			log.WithFields(log.Fields{
-				"app_name":    app_name,
-				"host_ip":     host_ip,
+				"appName":     appName,
+				"hostIp":      hostIP,
 				"logger_name": "kafka_handler.ConsumeClaim.Unmarshal",
 			}).Warn(err)
 		}
+
 		err := c.service.Save(event)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"app_name":    app_name,
-				"host_ip":     host_ip,
+				"appName":     appName,
+				"hostIp":      hostIP,
 				"logger_name": "kafka_handler.ConsumeClaim.Save",
 			}).Warn(err)
 			pgErr := &pgconn.PgError{}
@@ -72,19 +76,20 @@ func (c eventConsumer) ConsumeClaim(s sarama.ConsumerGroupSession, cl sarama.Con
 		} else {
 			s.MarkMessage(msg, "analytics")
 			log.WithFields(log.Fields{
-				"app_name":    app_name,
-				"host_ip":     host_ip,
+				"appName":     appName,
+				"hostIp":      hostIP,
 				"logger_name": "kafka_handler.ConsumeClaim.Save",
 			}).Debug("Message processed successfully")
 		}
 	}
+
 	return nil
 }
 
 func (c eventConsumer) Cleanup(sarama.ConsumerGroupSession) error {
 	log.WithFields(log.Fields{
-		"app_name":    app_name,
-		"host_ip":     host_ip,
+		"appName":     appName,
+		"hostIp":      hostIP,
 		"logger_name": "kafka_handler.Cleanup",
 	}).Debug("ConsumeClaim() loop has exited. Parent context is cancelled or a server-side rebalance cycle is initiated")
 	return nil

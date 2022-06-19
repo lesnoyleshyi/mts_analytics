@@ -17,8 +17,8 @@ import (
 const httpPort string = ":8080"
 const httpProfilePort = `:8085`
 const kafkaTopic = "task"
-const app_name = `mok_task_service`
-const host_ip = `lol_hz`
+const appName = `mok_task_service`
+const hostIp = `lol_hz`
 
 func main() {
 	log.SetLevel(log.DebugLevel)
@@ -40,6 +40,7 @@ func main() {
 
 	kafkaHandler, err := handlers.NewKafkaHandler(service)
 	if err != nil {
+		//TODO fix gocritic's advise
 		log.Fatalf("structure sucks: %s", err)
 	}
 	defer func() { _ = (*kafkaHandler.ConsumerGroup).Close() }()
@@ -60,7 +61,7 @@ func start(srv *http.Server, port string) {
 	log.WithField("func", "start").Debugf("Server started listening on port %s", port)
 	err := srv.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.WithField("func", "start").Fatalf("Server failed unexpectidly with error: %s", err)
+		log.WithField("func", "start").Fatalf("Server failed unexpectedly with error: %s", err)
 	}
 }
 
@@ -82,11 +83,12 @@ func shutdown(srv *http.Server, done chan struct{}) {
 
 func consume(ctx context.Context, h *handlers.KafkaHandler, topics ...string) {
 	var errCnt int64
+
 	for {
 		if err := (*h.ConsumerGroup).Consume(ctx, topics, h.Consumer); err != nil {
 			log.WithFields(log.Fields{
-				"app_name":    app_name,
-				"host_ip":     host_ip,
+				"appName":     appName,
+				"hostIp":      hostIp,
 				"logger_name": "main.CG.Consume_loop",
 			}).Errorf("error consuming: %s", err)
 			errCnt++
@@ -97,8 +99,8 @@ func consume(ctx context.Context, h *handlers.KafkaHandler, topics ...string) {
 		}
 		if err := ctx.Err(); err != nil {
 			log.WithFields(log.Fields{
-				"app_name":    app_name,
-				"host_ip":     host_ip,
+				"appName":     appName,
+				"hostIp":      hostIp,
 				"logger_name": "main.CG.Consume_loop",
 			}).Errorf("context catch error: %s. Stop consuming", err)
 			break
