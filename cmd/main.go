@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"gitlab.com/g6834/team17/analytics-service/internal/app"
 	"os/signal"
 	"syscall"
 )
@@ -13,6 +14,6 @@ func main() {
 	defer stop()
 
 	go app.Start(ctx)
-	<- ctx.Done()
-	app.Stop()
+	<-ctx.Done()
+	app.Stop(ctx)
 }

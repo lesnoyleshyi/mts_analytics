@@ -1,0 +1,123 @@
+version: "3.4"
+
+services:
+  analytics:
+    depends_on:
+      - postgres
+    build: .
+    container_name: analytics
+    hostname: api
+    ports:
+      - "8080:8080"
+      - "8085:8085"
+    environment:
+      PG_CONNSTR: postgres://go_user:8246go@postgres:5432/events
+    restart: on-failure
+
+  postgres:
+    image: postgres:14
+    container_name: postgres_analytics
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: events
+      POSTGRES_USER: go_user
+      POSTGRES_PASSWORD: 8246go
+    volumes:
+      - postgres_storage:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/1_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U go_user -d events"]
+      interval: 10s
+      timeout: 45s
+      retries: 3
+    restart: on-failure
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  zookeeper:
+    image: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka-1:
+    image: wurstmeister/kafka:latest
+    container_name: kafka-1
+    ports:
+      - "9095:9094"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://kafka-1:9092,OUTSIDE://kafka-1:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-1:9092,OUTSIDE://localhost:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+
+      KAFKA_LOG_DIRS: /kafka/logs
+      KAFKA_BROKER_ID: 501
+      KAFKA_offsets_topic_replication_factor: 3
+  kafka-2:
+    image: wurstmeister/kafka
+    container_name: kafka-2
+    ports:
+      - "9096:9094"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://kafka-2:9092,OUTSIDE://kafka-2:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-2:9092,OUTSIDE://localhost:9096
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+
+      KAFKA_LOG_DIRS: /kafka/logs
+      KAFKA_BROKER_ID: 502
+      KAFKA_offsets_topic_replication_factor: 3
+  kafka-3:
+    image: wurstmeister/kafka
+    container_name: kafka-3
+    ports:
+      - "9097:9094"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENERS: INTERNAL://kafka-3:9092,OUTSIDE://kafka-3:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-3:9092,OUTSIDE://localhost:9097
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+
+      KAFKA_LOG_DIRS: /kafka/logs
+      KAFKA_BROKER_ID: 503
+      KAFKA_offsets_topic_replication_factor: 3
+
+  mongo:
+    image: mongo:5.0
+    container_name: mongo_analytics
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: events
+      MONGO_INITDB_ROOT_USERNAME: go_user
+      MONGO_INITDB_ROOT_PASSWORD: 8246go
+    volumes:
+      - ./init.js:/docker-entrypoint-initdb.d/2_init.js
+      - mongo_storage:/data/db
+    restart: on-failure
+
+volumes:
+  postgres_storage:
+    name: events_volume_postgres
+  mongo_storage:
+    name: events_volume_mongo
+
