@@ -10,7 +10,7 @@ type EventService struct {
 	storage ports.EventStorage
 }
 
-func New(storage ports.EventStorage) EventService {
+func NewEventService(storage ports.EventStorage) EventService {
 	return EventService{storage: storage}
 }
 

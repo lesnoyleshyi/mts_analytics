@@ -26,7 +26,7 @@ func (d Database) Save(ctx context.Context, e entity.Event) error {
 		AccessMode:     pgx.ReadWrite,
 		DeferrableMode: pgx.NotDeferrable,
 	}
-	tx, err := d.Pool.BeginTx(ctx, txOpts)
+	tx, err := d.pool.BeginTx(ctx, txOpts)
 	defer func() { _ = tx.Rollback(ctx) }()
 	if err != nil {
 		return fmt.Errorf("%s: %w", errBeginTx, err)
@@ -56,7 +56,7 @@ func (d Database) GetSignedCount(ctx context.Context) (uint, error) {
 		DeferrableMode: pgx.NotDeferrable,
 	}
 
-	tx, err := d.Pool.BeginTx(ctx, txOpts)
+	tx, err := d.pool.BeginTx(ctx, txOpts)
 	defer func() { _ = tx.Rollback(ctx) }()
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", errBeginTx, err)
@@ -92,7 +92,7 @@ func (d Database) GetUnsignedCount(ctx context.Context) (uint, error) {
 		DeferrableMode: pgx.NotDeferrable,
 	}
 
-	tx, err := d.Pool.BeginTx(ctx, txOpts)
+	tx, err := d.pool.BeginTx(ctx, txOpts)
 	defer func() { _ = tx.Rollback(ctx) }()
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", errBeginTx, err)
@@ -124,7 +124,7 @@ func (d Database) GetSignitionTime(ctx context.Context, event entity.Event) (uin
 		AccessMode:     pgx.ReadOnly,
 		DeferrableMode: pgx.NotDeferrable,
 	}
-	tx, err := d.Pool.BeginTx(ctx, txOpts)
+	tx, err := d.pool.BeginTx(ctx, txOpts)
 	defer func() { _ = tx.Rollback(ctx) }()
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", errBeginTx, err)

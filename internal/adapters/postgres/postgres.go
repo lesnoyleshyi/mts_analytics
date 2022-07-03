@@ -4,22 +4,37 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"os"
 )
 
 type Database struct {
-	Pool *pgxpool.Pool
+	pool *pgxpool.Pool
 }
 
-func New(ctx context.Context, connstr string) (Database, error) {
-	connConf, err := pgxpool.ParseConfig(connstr)
+func New() *Database {
+	return &Database{pool: nil}
+}
+
+func (d *Database) Connect(ctx context.Context) error {
+	var err error
+
+	connConf, err := pgxpool.ParseConfig(os.Getenv("PG_CONNSTR"))
 	if err != nil {
-		return Database{}, fmt.Errorf("error parsing Postgres connstr: %w", err)
+		return fmt.Errorf("error parsing Postgres connstr: %w", err)
 	}
 
-	pool, err := pgxpool.ConnectConfig(ctx, connConf)
+	d.pool, err = pgxpool.ConnectConfig(ctx, connConf)
 	if err != nil {
-		return Database{}, fmt.Errorf("error creating connections Pool: %w", err)
+		return fmt.Errorf("error creating connections Pool: %w", err)
 	}
 
-	return Database{Pool: pool}, nil
+	return nil
+}
+
+func (d *Database) Close(ctx context.Context) error {
+	if d.pool != nil {
+		d.pool.Close()
+	}
+
+	return nil
 }

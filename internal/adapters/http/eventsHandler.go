@@ -19,7 +19,6 @@ func (a AdapterHTTP) routeEvents() http.Handler {
 }
 
 func (a AdapterHTTP) getSignedCount(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(a.events)
 	count, err := a.events.GetSignedCount(context.TODO())
 	if err != nil {
 		a.respondError(w, "error receiving count of signed tasks", http.StatusBadRequest, err)
