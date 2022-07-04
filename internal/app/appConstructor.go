@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"flag"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"log"
 	"sync"
 )
 
@@ -16,20 +17,18 @@ var storage Storage
 var httpServer httpAdapter.AdapterHTTP
 var profileServer httpAdapter.ProfileAdapter
 
+const pathToConfigFile = `config.yaml`
+
 //const PGConnStr = `postgres://team17:mNgd3ETbhVGd@91.185.93.23:5432/events`
 
 func Start(ctx context.Context, errChannel chan<- error) {
-	// should be hide in some config-initialising function
-	storageType := flag.String("storage", "postgres",
-		"defines storage type: postgres, mongo, cache, etc")
-	flag.Parse()
-	if storageType == nil {
-		*storageType = "postgres"
+	if err := config.ReadConfigYML(pathToConfigFile); err != nil {
+		log.Fatalf("error reading config file %s: %s", pathToConfigFile, err)
 	}
+	cfg := config.GetConfig()
 
 	logger = NewLogger()
-	//logger, _ = zap.NewProduction()
-	storage = NewStorage(*storageType)
+	storage = NewStorage(cfg.DB.Type)
 	eventService := usecases.NewEventService(storage)
 	httpServer = httpAdapter.New(eventService, logger)
 	profileServer = httpAdapter.NewProfileServer(logger)

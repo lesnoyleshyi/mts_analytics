@@ -15,10 +15,10 @@ type Storage interface {
 
 func NewStorage(storageType string) Storage {
 	switch storageType {
-	case "postgres":
-		return postgres.New()
 	case "mongo":
 		return myMongo.New()
+	case "postgres":
+		return postgres.New()
 	default:
 		return postgres.New()
 	}

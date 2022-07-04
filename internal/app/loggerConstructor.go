@@ -1,17 +1,11 @@
 package app
 
 import (
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
 )
-
-const appName = `analytics`
-const hostIP = `localhost`
-
-// DynamicLogLevel is a zap.AtomicLevel, that can change logging level
-// in runtime. We can change it via http-request.
-var DynamicLogLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 // NewStdEncoder returns standard EncoderConfig.
 // All configurations should be created by this func to sustain uniformity of logs.
@@ -41,6 +35,7 @@ func NewStdEncoder() zapcore.EncoderConfig {
 }
 
 func NewLogger() *zap.Logger {
+	cfg := config.GetConfig()
 	// Configure encoders from std prototype
 	//
 	//machineEncoderConfig := NewStdEncoder()
@@ -71,8 +66,9 @@ func NewLogger() *zap.Logger {
 	//})
 
 	// Chain all separate Cores into one Core
+
 	core := zapcore.NewTee(
-		zapcore.NewCore(consoleEncoder, stdout, DynamicLogLevel),
+		zapcore.NewCore(consoleEncoder, stdout, cfg.Logger.DynamicLevel),
 		//zapcore.NewCore(sentryEncoder, stdout, DynamicLogLevel), //test
 		//we can route log messages to stderr and stdout separately
 		// depending on their level
@@ -93,8 +89,8 @@ func NewLogger() *zap.Logger {
 	// Create logger with required fields that should be equal in each log message
 	l := zap.New(core).WithOptions(
 		zap.Fields(
-			zap.String("app_name", appName),
-			zap.String("host_ip", hostIP),
+			zap.String("app_name", cfg.Project.Name),
+			zap.String("host_ip", cfg.Rest.Host),
 		),
 		zap.AddStacktrace(zapcore.ErrorLevel),
 		zap.ErrorOutput(stdout),
@@ -102,7 +98,7 @@ func NewLogger() *zap.Logger {
 		//zap.ErrorOutput(stderr),
 	)
 
-	// it's another simpler way of configuring logger
+	// it's another simpler way of configuring logger (could be parsed from .yaml file)
 	//
 	//zap.Config{
 	//	Level:             zap.AtomicLevel{},
@@ -134,7 +130,7 @@ func NewLogger() *zap.Logger {
 	//	InitialFields:    nil,
 	//}
 	//var cfg zap.Config
-	//_ = yaml.Unmarshal([]byte(""), &cfg)
+	//_ = yaml.Unmarshal(os.Open(config.yaml), &cfg)
 
 	return l
 }

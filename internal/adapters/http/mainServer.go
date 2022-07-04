@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	"go.uber.org/zap"
+	"net"
 	"net/http"
 	"time"
 )
@@ -17,23 +19,16 @@ type AdapterHTTP struct {
 	server *http.Server
 }
 
-const HttpAddr = `:80`
-const gracefulShutdownDelaySec = 30
-
 func New(eventService ports.EventService, logger *zap.Logger) AdapterHTTP {
 	var adapter AdapterHTTP
+	var cfg = config.GetConfig()
 
 	adapter.events = eventService
-	adapter.logger = logger.With(zap.String("host_port", HttpAddr))
+	adapter.logger = logger.With(zap.String("host_port", cfg.Rest.BusinessPort))
 	server := http.Server{ //nolint:exhaustruct
-		Addr:    HttpAddr,
-		Handler: adapter.routes(),
-		// we could wrap *zap.Logger in adapter to pass here
-		ErrorLog: nil,
-		// maybe we should pass context from main.go here
-		BaseContext: nil,
-		// or here
-		ConnContext: nil,
+		Addr:     net.JoinHostPort(cfg.Rest.Host, cfg.Rest.BusinessPort),
+		Handler:  adapter.routes(),
+		ErrorLog: zap.NewStdLog(logger),
 	}
 	adapter.server = &server
 
@@ -64,7 +59,9 @@ func (a AdapterHTTP) Stop(ctx context.Context) error {
 		return nil
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*gracefulShutdownDelaySec)
+	cfg := config.GetConfig()
+	timeoutCtx, cancel := context.WithTimeout(ctx,
+		time.Second*time.Duration(cfg.Rest.GracefulTimeout))
 	defer cancel()
 
 	err := a.server.Shutdown(timeoutCtx)
@@ -100,7 +97,8 @@ func (a AdapterHTTP) respondSuccess(w http.ResponseWriter, msg string, status in
 
 func (a AdapterHTTP) respondError(w http.ResponseWriter, msg string, status int, err error) {
 	a.logger.Info("error serving request",
-		zap.Error(err))
+		zap.Error(err),
+	)
 	// http.Error requires response be plain text
 	//w.Header().Set("Content-Type", "application/json")
 	http.Error(w, fmt.Sprintf("{\"error\":\"%s\"}", msg), status)

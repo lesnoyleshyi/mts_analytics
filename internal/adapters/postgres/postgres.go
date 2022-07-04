@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"os"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
+	"net"
 )
 
 type Database struct {
@@ -18,7 +19,15 @@ func New() *Database {
 func (d *Database) Connect(ctx context.Context) error {
 	var err error
 
-	connConf, err := pgxpool.ParseConfig(os.Getenv("PG_CONNSTR"))
+	conf := config.GetConfig()
+	connstr := fmt.Sprintf("postgres://%s:%s@%s/%s",
+		conf.DB.User,
+		conf.DB.Password,
+		net.JoinHostPort(conf.DB.Host, conf.DB.Port),
+		conf.DB.DbName,
+	)
+
+	connConf, err := pgxpool.ParseConfig(connstr)
 	if err != nil {
 		return fmt.Errorf("error parsing Postgres connstr: %w", err)
 	}
