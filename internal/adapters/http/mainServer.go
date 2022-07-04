@@ -17,16 +17,16 @@ type AdapterHTTP struct {
 	server *http.Server
 }
 
-const httpAddr = `:80`
+const HttpAddr = `:80`
 const gracefulShutdownDelaySec = 30
 
 func New(eventService ports.EventService, logger *zap.Logger) AdapterHTTP {
 	var adapter AdapterHTTP
 
 	adapter.events = eventService
-	adapter.logger = logger
-	server := http.Server{
-		Addr:    httpAddr,
+	adapter.logger = logger.With(zap.String("host_port", HttpAddr))
+	server := http.Server{ //nolint:exhaustruct
+		Addr:    HttpAddr,
 		Handler: adapter.routes(),
 		// we could wrap *zap.Logger in adapter to pass here
 		ErrorLog: nil,
@@ -99,7 +99,8 @@ func (a AdapterHTTP) respondSuccess(w http.ResponseWriter, msg string, status in
 }
 
 func (a AdapterHTTP) respondError(w http.ResponseWriter, msg string, status int, err error) {
-	a.logger.Info("error serving request", zap.Error(err))
+	a.logger.Info("error serving request",
+		zap.Error(err))
 	// http.Error requires response be plain text
 	//w.Header().Set("Content-Type", "application/json")
 	http.Error(w, fmt.Sprintf("{\"error\":\"%s\"}", msg), status)

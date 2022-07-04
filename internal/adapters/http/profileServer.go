@@ -19,7 +19,7 @@ const httpProfileAddr = `:8080`
 func NewProfileServer(logger *zap.Logger) ProfileAdapter {
 	var adapter ProfileAdapter
 
-	adapter.logger = logger
+	adapter.logger = logger.With(zap.String("host_port", httpProfileAddr))
 	s := http.Server{ //nolint:exhaustruct
 		Addr:    httpProfileAddr,
 		Handler: adapter.routeProfiles(),

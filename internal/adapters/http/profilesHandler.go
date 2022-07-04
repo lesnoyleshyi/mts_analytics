@@ -20,6 +20,8 @@ const NotFoundPage = `
 func (a ProfileAdapter) routeProfiles() http.Handler {
 	r := chi.NewRouter()
 
+	//r.Handle("/debug/loglevel", app.DynamicLogLevel)
+
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		url := fmt.Sprintf("%s/debug/pprof/", req.Host)

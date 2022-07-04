@@ -27,7 +27,8 @@ func Start(ctx context.Context, errChannel chan<- error) {
 		*storageType = "postgres"
 	}
 
-	logger, _ = zap.NewProduction()
+	logger = NewLogger()
+	//logger, _ = zap.NewProduction()
 	storage = NewStorage(*storageType)
 	eventService := usecases.NewEventService(storage)
 	httpServer = httpAdapter.New(eventService, logger)
@@ -41,7 +42,6 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	logger.Info("application is starting")
 
 	if err = group.Wait(); err != nil {
-		// may be should panic instead of fatal-ing. Is it necessary to call stop() in main.go?
 		logger.Error("application start fail", zap.Error(err))
 		errChannel <- err
 	}
