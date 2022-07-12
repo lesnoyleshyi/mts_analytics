@@ -15,7 +15,8 @@ import (
 
 type JWTValidator struct {
 	transport interfaces.JWTValidator
-	logger    *zap.Logger
+	interfaces.Responder
+	logger *zap.Logger
 }
 
 //easyjson:json
@@ -40,8 +41,8 @@ var (
 	ErrEmptyUserID  = errors.New("auth service goes wrong: token doesn't have 'user_id' field")
 )
 
-func NewJWTValidator(transport interfaces.JWTValidator, logger *zap.Logger) JWTValidator {
-	return JWTValidator{transport: transport, logger: logger}
+func NewJWTValidator(t interfaces.JWTValidator, r interfaces.Responder, l *zap.Logger) JWTValidator {
+	return JWTValidator{transport: t, Responder: r, logger: l}
 }
 
 func (v JWTValidator) Validate(next http.Handler) http.Handler {
@@ -52,7 +53,7 @@ func (v JWTValidator) Validate(next http.Handler) http.Handler {
 		tokens, err := getTokens(r)
 		if err != nil {
 			v.logger.Warn("can't get tokens from request", zap.Error(err))
-			// TODO presenter writes response to client
+			v.RespondError(w, "invalid cookies", http.StatusBadRequest)
 			return
 		}
 
@@ -60,14 +61,20 @@ func (v JWTValidator) Validate(next http.Handler) http.Handler {
 		// receive updated tokens or error in case of invalid client's tokens
 		updatedTokens, err := v.transport.Validate(ctx, tokens)
 		if err != nil {
-			v.logger.Warn("can't validate tokens", zap.Error(err))
-			// TODO presenter writes response to client
+			v.logger.Warn("error validating tokens", zap.Error(err))
+			v.RespondError(w, "can't validate tokens", http.StatusUnauthorized)
 			return
 		}
 
 		// retrieve user info from token to pass it through request's context
 		accessPayload, err := parseToken(updatedTokens.Access)
+		if err != nil {
+			v.logger.Warn("error parsing token", zap.Error(err))
+		}
 		refreshPayload, err := parseToken(updatedTokens.Access)
+		if err != nil {
+			v.logger.Warn("error parsing token", zap.Error(err))
+		}
 
 		// set new cookies to let client update tokens (bad practice)
 		newAccess := http.Cookie{

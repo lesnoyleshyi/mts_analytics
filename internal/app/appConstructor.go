@@ -5,6 +5,7 @@ import (
 	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -14,6 +15,7 @@ import (
 var err error
 var logger *zap.Logger
 var storage Storage
+var responder interfaces.Responder
 var gRPCValidator client.AuthClient
 var httpServer httpAdapter.AdapterHTTP
 var profileServer httpAdapter.ProfileAdapter
@@ -31,15 +33,15 @@ func Start(ctx context.Context, errChannel chan<- error) {
 
 	logger, _ = zap.NewProduction()
 
-	//presenter := NewPresenter()
+	responder = httpAdapter.NewJSONResponder(logger)
 
 	// perhaps could be hide in NewValidator same way as NewStorage()
 	gRPCValidator = client.NewGrpcAuth()
-	validator := httpAdapter.NewJWTValidator(&gRPCValidator, logger)
+	validator := httpAdapter.NewJWTValidator(&gRPCValidator, responder, logger)
 
 	storage = NewStorage(*storageType)
 	eventService := usecases.NewEventService(storage)
-	httpServer = httpAdapter.New(eventService, logger, &validator)
+	httpServer = httpAdapter.New(eventService, logger, &validator, responder)
 
 	profileServer = httpAdapter.NewProfileServer(logger)
 

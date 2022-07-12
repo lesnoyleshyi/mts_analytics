@@ -16,6 +16,7 @@ import (
 type AdapterHTTP struct {
 	events    ports.EventService
 	validator interfaces.MiddlewareValidator
+	responder interfaces.Responder
 	logger    *zap.Logger
 	server    *http.Server
 }
@@ -23,12 +24,16 @@ type AdapterHTTP struct {
 const httpAddr = `:80`
 const gracefulShutdownDelaySec = 30
 
-func New(s ports.EventService, l *zap.Logger, v interfaces.MiddlewareValidator) AdapterHTTP {
+func New(s ports.EventService,
+	l *zap.Logger,
+	v interfaces.MiddlewareValidator,
+	r interfaces.Responder) AdapterHTTP {
 	var adapter AdapterHTTP
 
 	adapter.events = s
 	adapter.validator = v
 	adapter.logger = l
+	adapter.responder = r
 	server := http.Server{
 		Addr:    httpAddr,
 		Handler: adapter.routes(),
@@ -93,19 +98,4 @@ func (a AdapterHTTP) routes() http.Handler {
 	r.Mount("/", a.routeEvents())
 
 	return r
-}
-
-func (a AdapterHTTP) respondSuccess(w http.ResponseWriter, msg string, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if _, err := fmt.Fprintf(w, "{\"result\":\"%s\"}", msg); err != nil {
-		a.logger.Warn("error writing response", zap.Error(err))
-	}
-}
-
-func (a AdapterHTTP) respondError(w http.ResponseWriter, msg string, status int, err error) {
-	a.logger.Info("error serving request", zap.Error(err))
-	// http.Error requires response be plain text
-	//w.Header().Set("Content-Type", "application/json")
-	http.Error(w, fmt.Sprintf("{\"error\":\"%s\"}", msg), status)
 }
