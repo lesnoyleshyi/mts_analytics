@@ -26,8 +26,6 @@ func (a AdapterHTTP) getSignedCount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.respondSuccess(w, fmt.Sprint(count), http.StatusOK)
-
-	a.logger.Debug("request served")
 }
 
 func (a AdapterHTTP) getUnsignedCount(w http.ResponseWriter, r *http.Request) {

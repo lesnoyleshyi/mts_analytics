@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	"go.uber.org/zap"
 	"net/http"
@@ -12,19 +14,21 @@ import (
 )
 
 type AdapterHTTP struct {
-	events ports.EventService
-	logger *zap.Logger
-	server *http.Server
+	events    ports.EventService
+	validator interfaces.MiddlewareValidator
+	logger    *zap.Logger
+	server    *http.Server
 }
 
 const httpAddr = `:80`
 const gracefulShutdownDelaySec = 30
 
-func New(eventService ports.EventService, logger *zap.Logger) AdapterHTTP {
+func New(s ports.EventService, l *zap.Logger, v interfaces.MiddlewareValidator) AdapterHTTP {
 	var adapter AdapterHTTP
 
-	adapter.events = eventService
-	adapter.logger = logger
+	adapter.events = s
+	adapter.validator = v
+	adapter.logger = l
 	server := http.Server{
 		Addr:    httpAddr,
 		Handler: adapter.routes(),
@@ -80,7 +84,8 @@ func (a AdapterHTTP) Stop(ctx context.Context) error {
 func (a AdapterHTTP) routes() http.Handler {
 	r := chi.NewRouter()
 
-	//r.Use(a.validate.Validate)
+	r.Use(middleware.RequestID)
+	r.Use(a.validator.Validate)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("ok"))

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"flag"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
@@ -13,6 +14,7 @@ import (
 var err error
 var logger *zap.Logger
 var storage Storage
+var gRPCValidator client.AuthClient
 var httpServer httpAdapter.AdapterHTTP
 var profileServer httpAdapter.ProfileAdapter
 
@@ -28,13 +30,22 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	}
 
 	logger, _ = zap.NewProduction()
+
+	//presenter := NewPresenter()
+
+	// perhaps could be hide in NewValidator same way as NewStorage()
+	gRPCValidator = client.NewGrpcAuth()
+	validator := httpAdapter.NewJWTValidator(&gRPCValidator, logger)
+
 	storage = NewStorage(*storageType)
 	eventService := usecases.NewEventService(storage)
-	httpServer = httpAdapter.New(eventService, logger)
+	httpServer = httpAdapter.New(eventService, logger, &validator)
+
 	profileServer = httpAdapter.NewProfileServer(logger)
 
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
+	group.Go(func() error { return gRPCValidator.Connect(gctx) })
 	group.Go(func() error { return httpServer.Start(gctx) })
 	group.Go(func() error { return profileServer.Start(gctx) })
 
@@ -64,6 +75,14 @@ func Stop() {
 		defer wg.Done()
 		if err := profileServer.Stop(ctx); err != nil {
 			logger.Warn("profile server shutdown error", zap.Error(err))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := gRPCValidator.Disconnect(ctx); err != nil {
+			logger.Warn("validator disconnection error", zap.Error(err))
 		}
 	}()
 
