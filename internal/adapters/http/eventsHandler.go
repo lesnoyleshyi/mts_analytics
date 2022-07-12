@@ -20,6 +20,7 @@ func (a AdapterHTTP) routeEvents() http.Handler {
 }
 
 func (a AdapterHTTP) getSignedCount(w http.ResponseWriter, r *http.Request) {
+	// TODO pass correct context here
 	count, err := a.events.GetSignedCount(context.TODO())
 	if err != nil {
 		a.logger.Error("can't get count of signed tasks", zap.Error(err))
