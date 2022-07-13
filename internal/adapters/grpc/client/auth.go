@@ -3,8 +3,8 @@ package client
 import (
 	"context"
 	"errors"
-	auth "gitlab.com/g6834/team17/analytics-service/api/auth_service"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/dto"
+	auth "gitlab.com/g6834/team17/grpc/auth_service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"time"

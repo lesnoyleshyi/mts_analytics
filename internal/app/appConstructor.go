@@ -4,8 +4,10 @@ import (
 	"context"
 	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
+	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
-	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
+	httpInterfaces "gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/interfaces"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -15,10 +17,11 @@ import (
 var err error
 var logger *zap.Logger
 var storage Storage
-var responder interfaces.Responder
+var responder httpInterfaces.Responder
 var gRPCValidator client.AuthClient
 var httpServer httpAdapter.AdapterHTTP
 var profileServer httpAdapter.ProfileAdapter
+var messageConsumer interfaces.MessageConsumer
 
 //const PGConnStr = `postgres://team17:mNgd3ETbhVGd@91.185.93.23:5432/events`
 
@@ -40,16 +43,21 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	validator := httpAdapter.NewJWTValidator(&gRPCValidator, responder, logger)
 
 	storage = NewStorage(*storageType)
+
 	eventService := usecases.NewEventService(storage)
+
 	httpServer = httpAdapter.New(eventService, logger, &validator, responder)
 
 	profileServer = httpAdapter.NewProfileServer(logger)
+
+	messageConsumer = grpcServer.New(eventService, logger)
 
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
 	group.Go(func() error { return gRPCValidator.Connect(gctx) })
 	group.Go(func() error { return httpServer.Start(gctx) })
 	group.Go(func() error { return profileServer.Start(gctx) })
+	group.Go(func() error { return messageConsumer.StartConsume(gctx) })
 
 	logger.Info("application is starting")
 
@@ -62,6 +70,7 @@ func Start(ctx context.Context, errChannel chan<- error) {
 
 func Stop() {
 	var wg sync.WaitGroup
+	// TODO decide what kind of context should be passed in each case
 	ctx := context.Background()
 
 	wg.Add(1)
@@ -95,6 +104,16 @@ func Stop() {
 			logger.Warn("error on storage closing", zap.Error(err))
 		} else {
 			logger.Info("storage closed gracefully")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := messageConsumer.StopConsume(ctx); err != nil {
+			logger.Warn("error stopping message consuming gracefully")
+		} else {
+			logger.Info("message consumer stopped gracefully")
 		}
 	}()
 
