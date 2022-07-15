@@ -13,7 +13,7 @@ type Storage interface {
 	ports.EventStorage
 }
 
-func NewStorage(storageType string) Storage {
+func NewStorage(storageType string) Storage { //nolint:ireturn
 	switch storageType {
 	case "postgres":
 		return postgres.New()

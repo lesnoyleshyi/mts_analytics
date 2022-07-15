@@ -29,9 +29,9 @@ linters:
     - godox
     #        - goerr113
     #        - gofmt
-    #        - gofumpt
+    - gofumpt
     #        - goheader
-    #        - goimports
+    - goimports
     - golint
     #        - gomoddirectives
     #        - gomodguard
@@ -48,7 +48,7 @@ linters:
     #        - nestif
     #        - nilerr
     #        - nilnil
-    #        - nlreturn
+    - nlreturn
     #        - noctx
     #        - nolintlint
     #        - nonamedreturns
@@ -60,7 +60,7 @@ linters:
     #        - stylecheck
     - tagliatelle
     #        - tenv
-    #        - testpackage
+    - testpackage
     #        - thelper
     #        - tparallel
     #        - unconvert

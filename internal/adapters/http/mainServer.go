@@ -34,7 +34,7 @@ func New(s ports.EventService,
 	adapter.validator = v
 	adapter.logger = l
 	adapter.responder = r
-	server := http.Server{
+	server := http.Server{ //nolint:exhaustruct
 		Addr:    httpAddr,
 		Handler: adapter.routes(),
 		// we could wrap *zap.Logger in adapter to pass here

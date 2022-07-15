@@ -20,8 +20,6 @@ var gRPCValidator client.AuthClient
 var httpServer httpAdapter.AdapterHTTP
 var profileServer httpAdapter.ProfileAdapter
 
-//const PGConnStr = `postgres://team17:mNgd3ETbhVGd@91.185.93.23:5432/events`
-
 func Start(ctx context.Context, errChannel chan<- error) {
 	// should be hide in some config-initialising function
 	storageType := flag.String("storage", "postgres",

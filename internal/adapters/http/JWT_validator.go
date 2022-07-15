@@ -30,10 +30,12 @@ type jwtPayload struct {
 	Expires    int64  `json:"expired"`
 }
 
+type CtxKey string
+
 const (
-	ACCESS_TOKEN  = `access_token`
-	REFRESH_TOKEN = `refresh_token`
-	CTX_USER      = `user`
+	ACCESS_TOKEN  = `access_token`  //nolint:revive,stylecheck
+	REFRESH_TOKEN = `refresh_token` //nolint:revive,stylecheck
+	CTX_USER      = `user`          //nolint:revive,stylecheck
 )
 
 var (
@@ -77,13 +79,13 @@ func (v JWTValidator) Validate(next http.Handler) http.Handler {
 		}
 
 		// set new cookies to let client update tokens (bad practice)
-		newAccess := http.Cookie{
+		newAccess := http.Cookie{ //nolint:exhaustruct
 			Name:     ACCESS_TOKEN,
 			Value:    updatedTokens.Access,
 			Expires:  time.Unix(accessPayload.Expires, 0),
 			HttpOnly: true,
 		}
-		newRefresh := http.Cookie{
+		newRefresh := http.Cookie{ //nolint:exhaustruct
 			Name:     REFRESH_TOKEN,
 			Value:    updatedTokens.Refresh,
 			Expires:  time.Unix(refreshPayload.Expires, 0),
@@ -93,7 +95,7 @@ func (v JWTValidator) Validate(next http.Handler) http.Handler {
 		http.SetCookie(w, &newRefresh)
 
 		// inject user info into request's context
-		useredCtx := context.WithValue(r.Context(), CTX_USER, accessPayload.UserID)
+		useredCtx := context.WithValue(r.Context(), CtxKey(CTX_USER), accessPayload.UserID)
 
 		next.ServeHTTP(w, r.WithContext(useredCtx))
 	}
@@ -108,15 +110,17 @@ func getTokens(r *http.Request) (dto.TokenPair, error) {
 	}
 	refreshToken, err := r.Cookie(REFRESH_TOKEN)
 	if err != nil {
-		return dto.TokenPair{}, nil
+		return dto.TokenPair{}, nil //nolint:exhaustruct
 	}
 
 	return dto.TokenPair{Access: accessToken.Value, Refresh: refreshToken.Value}, nil
 }
 
 func parseToken(token string) (*jwtPayload, error) {
+	const tokenPartsCount = 3
+
 	tokenParts := strings.Split(token, ".")
-	if len(tokenParts) != 3 {
+	if len(tokenParts) != tokenPartsCount {
 		return nil, ErrInvalidToken
 	}
 
@@ -126,7 +130,7 @@ func parseToken(token string) (*jwtPayload, error) {
 		return nil, err
 	}
 
-	payload := jwtPayload{}
+	var payload jwtPayload
 	if err := easyjson.Unmarshal(payloadData, &payload); err != nil {
 		return nil, err
 	}

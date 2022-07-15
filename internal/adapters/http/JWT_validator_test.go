@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestJWTValidator_parseToken(t *testing.T) {
+func TestJWTValidator_parseToken(t *testing.T) { //nolint:paralleltest,funlen
 	type testCase struct {
 		rawToken              string
 		expectedPayloadStruct jwtPayload
@@ -54,7 +54,7 @@ func TestJWTValidator_parseToken(t *testing.T) {
 				"1lIjoiTGV4ZXkiLCJsYXN0X25hbWUiOiJQb3BvdiIsImVtYWlsIjoibGVoYXBv" +
 				"cEB5YS5ydSIsImV4cGlyZWQiOjExMzYxNzEwNDV9." +
 				"nAuQEoDVEYztULLGNDv8bRidhipo-Xn_kx9-Xk4rQwU",
-			expectedPayloadStruct: jwtPayload{
+			expectedPayloadStruct: jwtPayload{ //nolint:exhaustruct
 				Authorized: true,
 				UserName:   "leha",
 				FirstName:  "Lexey",

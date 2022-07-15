@@ -31,7 +31,9 @@ func NewGrpcAuth() AuthClient {
 }
 
 func (a *AuthClient) Connect(ctx context.Context) error {
-	timeOutCtx, cancel := context.WithTimeout(ctx, time.Second*10)
+	const ctxTimeOut = 10
+
+	timeOutCtx, cancel := context.WithTimeout(ctx, time.Second*ctxTimeOut)
 	defer cancel()
 
 	conn, err := grpc.DialContext(timeOutCtx, gRPCAddr, grpc.WithBlock(),

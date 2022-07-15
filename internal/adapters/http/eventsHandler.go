@@ -57,7 +57,7 @@ func (a AdapterHTTP) getSignitionTime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := a.events.GetSignitionTime(context.TODO(), entity.Event{TaskUUID: taskUUID})
+	t, err := a.events.GetSignitionTime(context.TODO(), entity.Event{TaskUUID: taskUUID}) //nolint:exhaustruct
 	if err != nil {
 		a.logger.Error("can't get count of unsigned tasks", zap.Error(err))
 		// not all errors should be 5XX. In case of wrong UUID it should return 400

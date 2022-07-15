@@ -1,2 +1,9 @@
 include:
   remote: 'https://gitlab.com/mts-teta-public/devops-tools/-/raw/master/.gitlab-ci-main.yml'
+
+lint:
+  image: registry.gitlab.com/gitlab-org/gitlab-build-images:golangci-lint-alpine
+  stage: build
+  script:
+    - '[ -e .golangci.yml ] || cp .golangci.yml .'
+    - golangci-lint run
