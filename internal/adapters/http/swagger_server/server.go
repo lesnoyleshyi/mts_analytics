@@ -1,41 +1,41 @@
-package http
+package swagger_server
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
 
-type ProfileAdapter struct {
-	logger *zap.Logger
+type SwaggerAdapter struct {
 	server *http.Server
 }
 
-const httpProfileAddr = `:8080`
+const host = `localhost`
+const port = `:9090`
+const gracefulShutdownDelaySec = 30
 
-func NewProfileServer(logger *zap.Logger) ProfileAdapter {
-	var adapter ProfileAdapter
+func New() SwaggerAdapter {
+	var adapter SwaggerAdapter
 
-	adapter.logger = logger
-	s := http.Server{ //nolint:exhaustruct
-		Addr:    httpProfileAddr,
-		Handler: adapter.routeProfiles(),
+	s := http.Server{
+		Addr:    port,
+		Handler: adapter.routes(),
 	}
 	adapter.server = &s
 
 	return adapter
 }
 
-func (a ProfileAdapter) Start(ctx context.Context) error {
+func (a SwaggerAdapter) Start(ctx context.Context) error {
 	srvErrChan := make(chan error)
 
 	go func() {
 		if err := a.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			srvErrChan <- fmt.Errorf("couldn't start server: %w", err)
 		}
+
 		srvErrChan <- nil
 	}()
 
@@ -47,9 +47,8 @@ func (a ProfileAdapter) Start(ctx context.Context) error {
 	}
 }
 
-func (a ProfileAdapter) Stop(ctx context.Context) error {
+func (a SwaggerAdapter) Stop(ctx context.Context) error {
 	if a.server == nil {
-		a.logger.Info("profile server wasn't initialised, stop() is no-op")
 		return nil
 	}
 
@@ -60,8 +59,6 @@ func (a ProfileAdapter) Stop(ctx context.Context) error {
 	if err != nil && errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
-
-	a.logger.Info("profile server stopped gracefully")
 
 	return nil
 }

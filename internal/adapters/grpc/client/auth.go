@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	auth "gitlab.com/g6834/team17/analytics-service/api/auth_service"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/dto"
 	"google.golang.org/grpc"
@@ -39,7 +40,7 @@ func (a *AuthClient) Connect(ctx context.Context) error {
 	conn, err := grpc.DialContext(timeOutCtx, gRPCAddr, grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return err
+		return fmt.Errorf("unable connect auth gRPC server: %w", err)
 	}
 
 	a.conn = conn
