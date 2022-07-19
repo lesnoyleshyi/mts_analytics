@@ -1,0 +1,81 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: Analytics service knows lifecycle of every task.
+  title: Analytics service
+  version: 0.0.1
+paths:
+  /agreed:
+    get:
+      description: Get count of all signed tasks
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: get signed tasks count
+      tags:
+      - count
+  /canceled:
+    get:
+      description: Get count of all tasks which are not signed (rejected and "in process")
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: get unsigned tasks count
+      tags:
+      - count
+  /total_time:
+    get:
+      description: Get total signition time in seconds of particular task by its id
+      parameters:
+      - description: uuid of task
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: 'time in sec: 100500'
+          schema:
+            type: string
+        "400":
+          description: user input is invalid
+          schema:
+            type: string
+        "500":
+          description: server can't retrieve signition time
+          schema:
+            type: string
+      summary: get signition time of task
+      tags:
+      - time
+schemes:
+- http
+securityDefinitions:
+  "":
+    description: Cookie authorization requires a pair of Access and Refresh tokens.
+      Get them in auth service. The below url is the place where you can do it.
+    flow: application
+    tokenUrl: auth-service/v1/auth/validate
+    type: oauth2
+swagger: "2.0"
+x-extension-openapi:
+  example: value on a json format
