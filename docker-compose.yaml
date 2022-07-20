@@ -22,17 +22,17 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: events
-      POSTGRES_USER: go_user
-      POSTGRES_PASSWORD: 8246go
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_storage:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/1_init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U go_user -d events"]
       interval: 10s
       timeout: 45s
       retries: 3
     restart: on-failure
+    command: -c log_min_duration_statement=0 -c log_connections=on -c log_disconnections=on
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
