@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
+	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/business_server"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
@@ -42,6 +43,7 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	validator := httpAdapter.NewJWTValidator(&gRPCValidator, responder, logger)
 
 	storage = NewStorage(*storageType)
+
 	eventService := usecases.NewEventService(storage)
 	httpServer = business_server.New(eventService, logger, &validator, responder)
 
@@ -49,12 +51,15 @@ func Start(ctx context.Context, errChannel chan<- error) {
 
 	documentationServer = swagger_server.New()
 
+	messageConsumer = grpcServer.New(eventService, logger)
+
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
 	group.Go(func() error { return gRPCValidator.Connect(gctx) })
 	group.Go(func() error { return httpServer.Start(gctx) })
 	group.Go(func() error { return profileServer.Start(gctx) })
 	group.Go(func() error { return documentationServer.Start(gctx) })
+	group.Go(func() error { return messageConsumer.StartConsume(gctx) })
 
 	logger.Info("application is starting")
 
@@ -67,6 +72,7 @@ func Start(ctx context.Context, errChannel chan<- error) {
 
 func Stop() {
 	var wg sync.WaitGroup
+	// TODO decide what kind of context should be passed in each case
 	ctx := context.Background()
 
 	wg.Add(1)
@@ -108,6 +114,16 @@ func Stop() {
 			logger.Warn("error on storage closing", zap.Error(err))
 		} else {
 			logger.Info("storage closed gracefully")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := messageConsumer.StopConsume(ctx); err != nil {
+			logger.Warn("error stopping message consuming gracefully")
+		} else {
+			logger.Info("message consumer stopped gracefully")
 		}
 	}()
 
