@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/google/uuid v1.3.0
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/mailru/easyjson v0.7.7
 	github.com/pressly/goose/v3 v3.6.1
@@ -13,8 +13,6 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/http-swagger v1.3.0
 	github.com/swaggo/swag v1.8.3
-	github.com/mailru/easyjson v0.7.7
-	github.com/stretchr/testify v1.8.0
 	gitlab.com/g6834/team17/grpc v0.0.0-20220713192817-68d2c84f17e0
 	go.mongodb.org/mongo-driver v1.9.1
 	go.uber.org/zap v1.21.0

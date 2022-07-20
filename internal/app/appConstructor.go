@@ -7,9 +7,10 @@ import (
 	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/business_server"
-	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
+	httpInterfaces "gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/profile_server"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/swagger_server"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/interfaces"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -19,11 +20,12 @@ import (
 var err error
 var logger *zap.Logger
 var storage Storage
-var responder interfaces.Responder
+var responder httpInterfaces.Responder
 var gRPCValidator client.AuthClient
 var httpServer business_server.AdapterHTTP
 var profileServer profile_server.ProfileAdapter
 var documentationServer swagger_server.SwaggerAdapter
+var messageConsumer interfaces.MessageConsumer
 
 func Start(ctx context.Context, errChannel chan<- error) {
 	// should be hide in some config-initialising function
