@@ -110,7 +110,7 @@ func getTokens(r *http.Request) (dto.TokenPair, error) {
 	}
 	refreshToken, err := r.Cookie(REFRESH_TOKEN)
 	if err != nil {
-		return dto.TokenPair{}, err //nolint:exhaustruct
+		return dto.TokenPair{}, err //nolint:nolintlint,exhaustruct
 	}
 
 	return dto.TokenPair{Access: accessToken.Value, Refresh: refreshToken.Value}, nil

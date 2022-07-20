@@ -5,7 +5,10 @@ import (
 	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/business_server"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/profile_server"
+	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/swagger_server"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -17,8 +20,9 @@ var logger *zap.Logger
 var storage Storage
 var responder interfaces.Responder
 var gRPCValidator client.AuthClient
-var httpServer httpAdapter.AdapterHTTP
-var profileServer httpAdapter.ProfileAdapter
+var httpServer business_server.AdapterHTTP
+var profileServer profile_server.ProfileAdapter
+var documentationServer swagger_server.SwaggerAdapter
 
 func Start(ctx context.Context, errChannel chan<- error) {
 	// should be hide in some config-initialising function
@@ -39,15 +43,18 @@ func Start(ctx context.Context, errChannel chan<- error) {
 
 	storage = NewStorage(*storageType)
 	eventService := usecases.NewEventService(storage)
-	httpServer = httpAdapter.New(eventService, logger, &validator, responder)
+	httpServer = business_server.New(eventService, logger, &validator, responder)
 
-	profileServer = httpAdapter.NewProfileServer(logger)
+	profileServer = profile_server.NewProfileServer(logger)
+
+	documentationServer = swagger_server.New()
 
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
 	group.Go(func() error { return gRPCValidator.Connect(gctx) })
 	group.Go(func() error { return httpServer.Start(gctx) })
 	group.Go(func() error { return profileServer.Start(gctx) })
+	group.Go(func() error { return documentationServer.Start(gctx) })
 
 	logger.Info("application is starting")
 
@@ -75,6 +82,14 @@ func Stop() {
 		defer wg.Done()
 		if err := profileServer.Stop(ctx); err != nil {
 			logger.Warn("profile server shutdown error", zap.Error(err))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := documentationServer.Stop(ctx); err != nil {
+			logger.Warn("swagger server shutdown error", zap.Error(err))
 		}
 	}()
 

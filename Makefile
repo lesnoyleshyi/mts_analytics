@@ -63,3 +63,9 @@ deps-go:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	#plugin for buffer compiler(protoc) to generate Go code(gRPC server & client)
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+.PHONY: doc
+doc:
+	swag init --dir			internal/adapters/ \
+			  --generalInfo	api.go \
+			  --output		api/swagger
