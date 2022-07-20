@@ -1,6 +1,11 @@
 run:
   timeout: 5m
 
+issues:
+  exclude:
+    - "don't use an underscore in package name"
+    - "should not use underscores in package names"
+
 linters:
   enable-all: true
   disable:

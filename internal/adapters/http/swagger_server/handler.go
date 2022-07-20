@@ -3,7 +3,7 @@ package swagger_server
 import (
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
-	// path to swagger docs. Is required by swagger package
+	// path to swagger docs. Is required by swagger package.
 	_ "gitlab.com/g6834/team17/analytics-service/api/swagger"
 	"net/http"
 )

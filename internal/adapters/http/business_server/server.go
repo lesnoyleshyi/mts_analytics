@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/cors"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	"go.uber.org/zap"
@@ -89,7 +89,7 @@ func (a AdapterHTTP) Stop(ctx context.Context) error {
 func (a AdapterHTTP) routes() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
+	r.Use(cors.Default().Handler)
 	r.Use(a.validator.Validate)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

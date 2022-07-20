@@ -22,10 +22,11 @@ func (a AdapterHTTP) routeEvents() http.Handler {
 // getSignedCount godoc
 // @Tags count
 // @Summary get signed tasks count
-// @Description Get count of all signed tasks
+// @Description Get count of all signed tasks.
 // @Produce plain
 // @Success 200 {integer} int
 // @Failure 400 {string} string
+//nolint:godot
 // @Router /agreed [get]
 func (a AdapterHTTP) getSignedCount(w http.ResponseWriter, r *http.Request) {
 	// TODO pass correct context here
@@ -44,10 +45,11 @@ func (a AdapterHTTP) getSignedCount(w http.ResponseWriter, r *http.Request) {
 // getUnsignedCount godoc
 // @Tags count
 // @Summary get unsigned tasks count
-// @Description Get count of all tasks which are not signed (rejected and "in process")
+// @Description Get count of all tasks which are not signed (rejected and "in process").
 // @Produce plain
 // @Success 200 {integer} int
 // @Failure 400 {string} string
+//nolint:godot
 // @Router /canceled [get]
 func (a AdapterHTTP) getUnsignedCount(w http.ResponseWriter, r *http.Request) {
 	count, err := a.events.GetUnsignedCount(context.TODO())
@@ -70,10 +72,11 @@ func (a AdapterHTTP) getUnsignedCount(w http.ResponseWriter, r *http.Request) {
 // @Description Get total signition time in seconds of particular task by its id
 // @Produce plain
 // TODO inadequate representation in swagger UI! I don't want 'string' in 'Example value'
-// @Success 200 {string} string "time in sec: 100500"
-// @Failure 400 {string} string "user input is invalid"
-// @Failure 500 {string} string "server can't retrieve signition time"
+// @Success 200 {string} string "example: 'time in sec: 100500'"
+// @Failure 400 {string} string "returns in case user input is invalid"
+// @Failure 500 {string} string "returns in case server can't retrieve signition time"
 // @Router /total_time [get]
+//nolint:godot
 // @Param id query int true "uuid of task"
 func (a AdapterHTTP) getSignitionTime(w http.ResponseWriter, r *http.Request) {
 	taskUUID := r.URL.Query().Get("id")

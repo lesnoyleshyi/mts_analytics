@@ -18,7 +18,7 @@ const docTemplate = `{
     "paths": {
         "/agreed": {
             "get": {
-                "description": "Get count of all signed tasks",
+                "description": "Get count of all signed tasks.",
                 "produces": [
                     "text/plain"
                 ],
@@ -44,7 +44,7 @@ const docTemplate = `{
         },
         "/canceled": {
             "get": {
-                "description": "Get count of all tasks which are not signed (rejected and \"in process\")",
+                "description": "Get count of all tasks which are not signed (rejected and \"in process\").",
                 "produces": [
                     "text/plain"
                 ],
@@ -89,19 +89,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "time in sec: 100500",
+                        "description": "example: 'time in sec: 100500'",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "400": {
-                        "description": "user input is invalid",
+                        "description": "returns in case user input is invalid",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "500": {
-                        "description": "server can't retrieve signition time",
+                        "description": "returns in case server can't retrieve signition time",
                         "schema": {
                             "type": "string"
                         }
@@ -112,7 +112,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "": {
-            "description": "Cookie authorization requires a pair of Access and Refresh tokens. Get them in auth service. The below url is the place where you can do it.",
+            "description": "Cookie authorization requires a pair of Access and Refresh tokens. Get them in auth service. Url below is the place where you can do it.",
             "type": "oauth2",
             "flow": "application",
             "tokenUrl": "auth-service/v1/auth/validate"
@@ -126,7 +126,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "0.0.1",
-	Host:             "localhost:8080",
+	Host:             "localhost:80",
 	BasePath:         "/",
 	Schemes:          []string{"http"},
 	Title:            "Analytics service",

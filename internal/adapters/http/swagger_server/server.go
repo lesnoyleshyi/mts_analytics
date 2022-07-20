@@ -12,14 +12,13 @@ type SwaggerAdapter struct {
 	server *http.Server
 }
 
-const host = `localhost`
 const port = `:9090`
 const gracefulShutdownDelaySec = 30
 
 func New() SwaggerAdapter {
 	var adapter SwaggerAdapter
 
-	s := http.Server{
+	s := http.Server{ //nolint:exhaustruct
 		Addr:    port,
 		Handler: adapter.routes(),
 	}
