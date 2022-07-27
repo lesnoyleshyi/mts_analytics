@@ -21,7 +21,7 @@ type AdapterHTTP struct {
 	server    *http.Server
 }
 
-const httpAddr = `:80`
+const httpAddr = `:8282`
 const gracefulShutdownDelaySec = 30
 
 func New(s ports.EventService,
@@ -54,7 +54,7 @@ func (a AdapterHTTP) Start(ctx context.Context) error {
 
 	go func() {
 		if err := a.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			srvErrChan <- fmt.Errorf("couldn't start server: %w", err)
+			srvErrChan <- fmt.Errorf("couldn't start business server: %w", err)
 		}
 		srvErrChan <- nil
 	}()

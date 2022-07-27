@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
-	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/business_server"
 	httpInterfaces "gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
@@ -30,13 +29,18 @@ var messageConsumer interfaces.MessageConsumer
 func Start(ctx context.Context, errChannel chan<- error) {
 	// should be hide in some config-initialising function
 	storageType := flag.String("storage", "postgres",
-		"defines storage type: postgres, mongo, cache, etc")
+		"defines storage type: postgres or mongo")
+	consumerType := flag.String("consumer", "kafka",
+		"defines message consumer: gRPC or kafka")
 	flag.Parse()
 	if storageType == nil {
 		*storageType = "postgres"
 	}
+	if consumerType == nil {
+		*consumerType = "kafka"
+	}
 
-	logger, _ = zap.NewProduction()
+	logger, _ = zap.NewDevelopment()
 
 	responder = httpAdapter.NewJSONResponder(logger)
 
@@ -47,13 +51,12 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	storage = NewStorage(*storageType)
 
 	eventService := usecases.NewEventService(storage)
+
 	httpServer = business_server.New(eventService, logger, &validator, responder)
-
 	profileServer = profile_server.NewProfileServer(logger)
-
 	documentationServer = swagger_server.New()
 
-	messageConsumer = grpcServer.New(eventService, logger)
+	messageConsumer = NewConsumer(*consumerType, eventService, logger)
 
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })

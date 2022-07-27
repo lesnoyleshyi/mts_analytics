@@ -53,7 +53,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka-1:
-    image: wurstmeister/kafka:latest
+    image: 'wurstmeister/kafka:latest'
     container_name: kafka-1
     ports:
       - "9095:9094"

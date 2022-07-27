@@ -32,7 +32,7 @@ func (a SwaggerAdapter) Start(ctx context.Context) error {
 
 	go func() {
 		if err := a.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			srvErrChan <- fmt.Errorf("couldn't start server: %w", err)
+			srvErrChan <- fmt.Errorf("couldn't start documentation server: %w", err)
 		}
 
 		srvErrChan <- nil

@@ -25,9 +25,6 @@ ifeq ("NT", "$(findstring NT,$(OS_NAME))")
 OS_NAME=Windows
 endif
 
-.PHONY: run
-run:
-	go run cmd/auth/main.go
 
 .PHONY: lint
 lint:
@@ -69,3 +66,8 @@ doc:
 	swag init --dir			internal/adapters/ \
 			  --generalInfo	api.go \
 			  --output		api/swagger
+
+
+.PHONY: run
+run:
+	go run cmd/main.go
