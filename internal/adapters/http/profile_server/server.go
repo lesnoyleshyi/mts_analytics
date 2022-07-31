@@ -16,9 +16,6 @@ type ProfileAdapter struct {
 	server *http.Server
 }
 
-const httpProfileAddr = `:8080`
-const gracefulShutdownDelaySec = 30
-
 func NewProfileServer(logger *zap.Logger) ProfileAdapter {
 	var adapter ProfileAdapter
 	var cfg = config.GetConfig()

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
-	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
+	i "gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
 	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	"go.uber.org/zap"
@@ -17,43 +17,34 @@ import (
 
 type AdapterHTTP struct {
 	events    ports.EventService
-	validator interfaces.MiddlewareValidator
-	responder interfaces.Responder
+	validator i.MiddlewareValidator
+	responder i.Responder
 	logger    *zap.Logger
 	server    *http.Server
 }
 
-const httpAddr = `:80`
-const gracefulShutdownDelaySec = 30
-
-func New(s ports.EventService,
-	l *zap.Logger,
-	v interfaces.MiddlewareValidator,
-	r interfaces.Responder) AdapterHTTP {
-func New(eventService ports.EventService, logger *zap.Logger) AdapterHTTP {
+func New(s ports.EventService, l *zap.Logger, v i.MiddlewareValidator, r i.Responder) AdapterHTTP {
 	var adapter AdapterHTTP
-	var cfg = config.GetConfig()
+	var cfg config.Config
+
+	cfg = config.GetConfig()
 
 	adapter.events = s
 	adapter.validator = v
-	adapter.logger = l
+	adapter.logger = l.With(zap.String("host_port", cfg.Rest.BusinessPort))
 	adapter.responder = r
+
 	server := http.Server{ //nolint:exhaustruct
-		Addr:    httpAddr,
+		Addr:    net.JoinHostPort(cfg.Rest.Host, cfg.Rest.BusinessPort),
 		Handler: adapter.routes(),
 		// we could wrap *zap.Logger in adapter to pass here
-		ErrorLog: nil,
+		ErrorLog: zap.NewStdLog(l),
 		// maybe we should pass context from main.go here
 		BaseContext: nil,
 		// or here
 		ConnContext: nil,
-	adapter.events = eventService
-	adapter.logger = logger.With(zap.String("host_port", cfg.Rest.BusinessPort))
-	server := http.Server{ //nolint:exhaustruct
-		Addr:     net.JoinHostPort(cfg.Rest.Host, cfg.Rest.BusinessPort),
-		Handler:  adapter.routes(),
-		ErrorLog: zap.NewStdLog(logger),
 	}
+
 	adapter.server = &server
 
 	return adapter

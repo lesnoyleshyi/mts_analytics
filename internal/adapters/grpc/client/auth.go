@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/dto"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	auth "gitlab.com/g6834/team17/grpc/auth_service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"net"
 	"time"
 )
 
@@ -15,8 +17,6 @@ type AuthClient struct {
 	client *auth.AuthServiceClient
 	conn   *grpc.ClientConn
 }
-
-const gRPCAddr = `localhost:8082`
 
 var (
 	ErrInvalidToken  = errors.New("invalid token")
@@ -32,9 +32,11 @@ func NewGrpcAuth() AuthClient {
 }
 
 func (a *AuthClient) Connect(ctx context.Context) error {
-	const ctxTimeOut = 10
+	cfg := config.GetConfig()
+	gRPCAddr := net.JoinHostPort(cfg.GRPC.Host, cfg.GRPC.Port)
+	ctxTimeout := time.Duration(cfg.GRPC.ConnTimeout)
 
-	timeOutCtx, cancel := context.WithTimeout(ctx, time.Second*ctxTimeOut)
+	timeOutCtx, cancel := context.WithTimeout(ctx, time.Second*ctxTimeout)
 	defer cancel()
 
 	conn, err := grpc.DialContext(timeOutCtx, gRPCAddr, grpc.WithBlock(),

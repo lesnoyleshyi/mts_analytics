@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
+	"net"
 	"net/http"
 	"time"
 )
@@ -12,14 +14,13 @@ type SwaggerAdapter struct {
 	server *http.Server
 }
 
-const port = `:9090`
-const gracefulShutdownDelaySec = 30
-
 func New() SwaggerAdapter {
 	var adapter SwaggerAdapter
+	cfg := config.GetConfig()
+	docAddr := net.JoinHostPort(cfg.Rest.Host, cfg.Rest.DocPort)
 
 	s := http.Server{ //nolint:exhaustruct
-		Addr:    port,
+		Addr:    docAddr,
 		Handler: adapter.routes(),
 	}
 	adapter.server = &s
@@ -50,6 +51,9 @@ func (a SwaggerAdapter) Stop(ctx context.Context) error {
 	if a.server == nil {
 		return nil
 	}
+
+	cfg := config.GetConfig()
+	gracefulShutdownDelaySec := time.Duration(cfg.Rest.GracefulTimeout)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*gracefulShutdownDelaySec)
 	defer cancel()

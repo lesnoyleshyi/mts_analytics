@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
 	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
@@ -11,9 +10,11 @@ import (
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/profile_server"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/swagger_server"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/interfaces"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	"gitlab.com/g6834/team17/analytics-service/internal/domain/usecases"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"log"
 	"sync"
 )
 
@@ -22,10 +23,12 @@ var logger *zap.Logger
 var storage Storage
 var responder httpInterfaces.Responder
 var gRPCValidator client.AuthClient
-var httpServer business_server.AdapterHTTP
+var businessServer business_server.AdapterHTTP
 var profileServer profile_server.ProfileAdapter
 var documentationServer swagger_server.SwaggerAdapter
 var messageConsumer interfaces.MessageConsumer
+
+const pathToConfigFile = `config.yaml`
 
 func Start(ctx context.Context, errChannel chan<- error) {
 	if err := config.ReadConfigYML(pathToConfigFile); err != nil {
@@ -42,14 +45,11 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	// perhaps could be hide in NewValidator same way as NewStorage()
 	gRPCValidator = client.NewGrpcAuth()
 	validator := httpAdapter.NewJWTValidator(&gRPCValidator, responder, logger)
-
-	storage = NewStorage(*storageType)
-
+	storage = NewStorage(cfg.DB.Type)
 	eventService := usecases.NewEventService(storage)
-	httpServer = business_server.New(eventService, logger, &validator, responder)
 
+	businessServer = business_server.New(eventService, logger, &validator, responder)
 	profileServer = profile_server.NewProfileServer(logger)
-
 	documentationServer = swagger_server.New()
 
 	messageConsumer = grpcServer.New(eventService, logger)
@@ -57,7 +57,7 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
 	group.Go(func() error { return gRPCValidator.Connect(gctx) })
-	group.Go(func() error { return httpServer.Start(gctx) })
+	group.Go(func() error { return businessServer.Start(gctx) })
 	group.Go(func() error { return profileServer.Start(gctx) })
 	group.Go(func() error { return documentationServer.Start(gctx) })
 	group.Go(func() error { return messageConsumer.StartConsume(gctx) })
@@ -78,7 +78,7 @@ func Stop() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := httpServer.Stop(ctx); err != nil {
+		if err := businessServer.Stop(ctx); err != nil {
 			logger.Warn("main server shutdown error", zap.Error(err))
 		}
 	}()

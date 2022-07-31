@@ -9,9 +9,15 @@ logger:
 
 rest:
   host: 0.0.0.0
-  port: 80
-  debugPort: 8080
+  port: 8080
+  debugPort: 8081
+  documentation_port: 8082
   gracefulTimeout: 30 # Seconds
+
+grpc:
+  host: 0.0.0.0
+  port: 5051
+  connection_timeout: 10
 
 database:
   type: postgres

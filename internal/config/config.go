@@ -42,13 +42,15 @@ type Database struct {
 type Rest struct {
 	Host            string `yaml:"host"`
 	BusinessPort    string `yaml:"port"`
-	DebugPort       string `yaml:"debugPort"`
-	GracefulTimeout uint   `yaml:"gracefulTimeout"`
+	DebugPort       string `yaml:"debug_port"`
+	DocPort         string `yaml:"documentation_port"`
+	GracefulTimeout uint   `yaml:"graceful_timeout"`
 }
 
 type GRPC struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Host        string `yaml:"host"`
+	Port        string `yaml:"port"`
+	ConnTimeout uint   `yaml:"connection_timeout"`
 }
 
 func GetConfig() Config {

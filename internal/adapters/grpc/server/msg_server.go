@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	pb "gitlab.com/g6834/team17/grpc/analytics_messaging"
 	"go.uber.org/zap"
@@ -15,8 +16,6 @@ type GrpcConsumer struct {
 	logger      *zap.Logger
 }
 
-const gRPCaddr = `:50051`
-
 func New(service ports.EventService, logger *zap.Logger) GrpcConsumer {
 	grpcServer := grpc.NewServer()
 	consumer := newGrpcConsumer(service, logger)
@@ -25,6 +24,9 @@ func New(service ports.EventService, logger *zap.Logger) GrpcConsumer {
 }
 
 func (c GrpcConsumer) StartConsume(ctx context.Context) error {
+	cfg := config.GetConfig()
+	gRPCaddr := net.JoinHostPort(cfg.GRPC.Host, cfg.GRPC.Port)
+
 	conf := net.ListenConfig{
 		Control:   nil,
 		KeepAlive: 0,
