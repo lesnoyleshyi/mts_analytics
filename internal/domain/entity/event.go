@@ -14,6 +14,7 @@ import "time"
 //	EVENT_SENT
 //)
 
+//easyjson:json
 type Event struct {
 	TaskUUID  string    `json:"task_uuid"`
 	EventType string    `json:"event"`

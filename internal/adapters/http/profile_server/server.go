@@ -37,7 +37,7 @@ func (a ProfileAdapter) Start(ctx context.Context) error {
 		a.logger.Info("profile server starts listen", zap.String("port", a.server.Addr))
 
 		if err := a.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			srvErrChan <- fmt.Errorf("couldn't start server: %w", err)
+			srvErrChan <- fmt.Errorf("couldn't start profile server: %w", err)
 		}
 
 		srvErrChan <- nil

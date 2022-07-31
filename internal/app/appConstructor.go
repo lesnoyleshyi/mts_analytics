@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
 	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
@@ -38,7 +39,6 @@ func Start(ctx context.Context, errChannel chan<- error) {
 
 	logger = NewLogger()
 	storage = NewStorage(cfg.DB.Type)
-	logger, _ = zap.NewProduction()
 
 	responder = httpAdapter.NewJSONResponder(logger)
 
@@ -52,7 +52,7 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	profileServer = profile_server.NewProfileServer(logger)
 	documentationServer = swagger_server.New()
 
-	messageConsumer = grpcServer.New(eventService, logger)
+	messageConsumer = NewConsumer(*consumerType, eventService, logger)
 
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
@@ -65,6 +65,7 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	logger.Info("application is starting")
 
 	if err = group.Wait(); err != nil {
+		// may be should panic instead of fatal-ing. Is it necessary to call stop() in main.go?
 		logger.Error("application start fail", zap.Error(err))
 		errChannel <- err
 	}
