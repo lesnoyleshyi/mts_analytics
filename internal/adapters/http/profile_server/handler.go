@@ -3,6 +3,7 @@ package profile_server
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	"net/http"
 	"net/http/pprof"
 )
@@ -19,6 +20,9 @@ const NotFoundPage = `
 
 func (a ProfileAdapter) routeProfiles() http.Handler {
 	r := chi.NewRouter()
+
+	cfg := config.GetConfig()
+	r.Handle("/debug/loglevel", cfg.Logger.DynamicLevel)
 
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)

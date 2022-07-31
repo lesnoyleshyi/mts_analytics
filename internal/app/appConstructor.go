@@ -28,14 +28,13 @@ var documentationServer swagger_server.SwaggerAdapter
 var messageConsumer interfaces.MessageConsumer
 
 func Start(ctx context.Context, errChannel chan<- error) {
-	// should be hide in some config-initialising function
-	storageType := flag.String("storage", "postgres",
-		"defines storage type: postgres, mongo, cache, etc")
-	flag.Parse()
-	if storageType == nil {
-		*storageType = "postgres"
+	if err := config.ReadConfigYML(pathToConfigFile); err != nil {
+		log.Fatalf("error reading config file %s: %s", pathToConfigFile, err)
 	}
+	cfg := config.GetConfig()
 
+	logger = NewLogger()
+	storage = NewStorage(cfg.DB.Type)
 	logger, _ = zap.NewProduction()
 
 	responder = httpAdapter.NewJSONResponder(logger)
@@ -66,7 +65,6 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	logger.Info("application is starting")
 
 	if err = group.Wait(); err != nil {
-		// may be should panic instead of fatal-ing. Is it necessary to call stop() in main.go?
 		logger.Error("application start fail", zap.Error(err))
 		errChannel <- err
 	}

@@ -10,6 +10,8 @@ import (
 	"github.com/pressly/goose/v3"
 	"log"
 	"os"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
+	"net"
 )
 
 type Database struct {
@@ -27,6 +29,15 @@ func (d *Database) Connect(ctx context.Context) error {
 	var err error
 
 	connstr := os.Getenv("PG_CONNSTR")
+
+	connConf, err := pgxpool.ParseConfig(connstr)
+	conf := config.GetConfig()
+	connstr := fmt.Sprintf("postgres://%s:%s@%s/%s",
+		conf.DB.User,
+		conf.DB.Password,
+		net.JoinHostPort(conf.DB.Host, conf.DB.Port),
+		conf.DB.DbName,
+	)
 
 	connConf, err := pgxpool.ParseConfig(connstr)
 	if err != nil {

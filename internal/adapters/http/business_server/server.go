@@ -7,8 +7,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/cors"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	"go.uber.org/zap"
+	"net"
 	"net/http"
 	"time"
 )
@@ -28,7 +30,9 @@ func New(s ports.EventService,
 	l *zap.Logger,
 	v interfaces.MiddlewareValidator,
 	r interfaces.Responder) AdapterHTTP {
+func New(eventService ports.EventService, logger *zap.Logger) AdapterHTTP {
 	var adapter AdapterHTTP
+	var cfg = config.GetConfig()
 
 	adapter.events = s
 	adapter.validator = v
@@ -43,6 +47,12 @@ func New(s ports.EventService,
 		BaseContext: nil,
 		// or here
 		ConnContext: nil,
+	adapter.events = eventService
+	adapter.logger = logger.With(zap.String("host_port", cfg.Rest.BusinessPort))
+	server := http.Server{ //nolint:exhaustruct
+		Addr:     net.JoinHostPort(cfg.Rest.Host, cfg.Rest.BusinessPort),
+		Handler:  adapter.routes(),
+		ErrorLog: zap.NewStdLog(logger),
 	}
 	adapter.server = &server
 
@@ -73,7 +83,9 @@ func (a AdapterHTTP) Stop(ctx context.Context) error {
 		return nil
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*gracefulShutdownDelaySec)
+	cfg := config.GetConfig()
+	timeoutCtx, cancel := context.WithTimeout(ctx,
+		time.Second*time.Duration(cfg.Rest.GracefulTimeout))
 	defer cancel()
 
 	err := a.server.Shutdown(timeoutCtx)

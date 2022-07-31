@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	"go.uber.org/zap"
+	"net"
 	"net/http"
 	"time"
 )
@@ -19,10 +21,11 @@ const gracefulShutdownDelaySec = 30
 
 func NewProfileServer(logger *zap.Logger) ProfileAdapter {
 	var adapter ProfileAdapter
+	var cfg = config.GetConfig()
 
-	adapter.logger = logger
+	adapter.logger = logger.With(zap.String("host_port", cfg.Rest.DebugPort))
 	s := http.Server{ //nolint:exhaustruct
-		Addr:    httpProfileAddr,
+		Addr:    net.JoinHostPort(cfg.Rest.Host, cfg.Rest.DebugPort),
 		Handler: adapter.routeProfiles(),
 	}
 	adapter.server = &s
@@ -57,7 +60,9 @@ func (a ProfileAdapter) Stop(ctx context.Context) error {
 		return nil
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*gracefulShutdownDelaySec)
+	cfg := config.GetConfig()
+	timeoutCtx, cancel := context.WithTimeout(ctx,
+		time.Second*time.Duration(cfg.Rest.GracefulTimeout))
 	defer cancel()
 
 	err := a.server.Shutdown(timeoutCtx)

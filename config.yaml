@@ -1,0 +1,22 @@
+project:
+  name: analytics
+  debug: true
+  environment: development
+  version: 0.1
+
+logger:
+  level:  info
+
+rest:
+  host: 0.0.0.0
+  port: 80
+  debugPort: 8080
+  gracefulTimeout: 30 # Seconds
+
+database:
+  type: postgres
+  host: localhost
+  port: 5432
+  user: go_user
+  password: 8246go
+  db_name: events
