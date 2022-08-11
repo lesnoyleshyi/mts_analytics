@@ -2,21 +2,20 @@ package config
 
 import (
 	"fmt"
+	"github.com/ilyakaznacheev/cleanenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v2"
-	"os"
-	"path/filepath"
 )
 
 var cfg *Config
 
 type Config struct {
-	Project Project  `yaml:"project"`
-	DB      Database `yaml:"database"`
-	Rest    Rest     `yaml:"rest"`
-	GRPC    GRPC     `yaml:"gRPC"`
-	Logger  Logger   `yaml:"logger"`
+	Project  Project  `yaml:"project"`
+	DB       Database `yaml:"database"`
+	Rest     Rest     `yaml:"rest"`
+	GRPC     GRPC     `yaml:"gRPC"`
+	Logger   Logger   `yaml:"logger"`
+	Consumer Consumer `yaml:"consumer"`
 }
 type Project struct {
 	Name        string `yaml:"name"`
@@ -34,8 +33,8 @@ type Database struct {
 	Type     string `yaml:"type"`
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	User     string `yaml:"user" env:"DB_USER"`
+	Password string `yaml:"password" env:"DB_PASSWORD"`
 	DbName   string `yaml:"db_name"`
 }
 
@@ -53,6 +52,13 @@ type GRPC struct {
 	ConnTimeout uint   `yaml:"connection_timeout"`
 }
 
+type Consumer struct {
+	Type        string   `yaml:"type"`
+	Brokers     []string `yaml:"brokers"`
+	Topics      []string `yaml:"topics"`
+	ConsGroupID string   `yaml:"consumer_group_id"`
+}
+
 func GetConfig() Config {
 	if cfg != nil {
 		return *cfg
@@ -66,22 +72,19 @@ func ReadConfigYML(pathToConfFile string) error {
 		return fmt.Errorf("config instance is already exist")
 	}
 
-	confFile, err := os.Open(filepath.Clean(pathToConfFile))
-	if err != nil {
-		return fmt.Errorf("can't open config file: %w", err)
-	}
-	defer func() { _ = confFile.Close() }()
-
-	if err := yaml.NewDecoder(confFile).Decode(&cfg); err != nil {
-		return fmt.Errorf("can't decode config: %w", err)
+	config := new(Config)
+	if err := cleanenv.ReadConfig(pathToConfFile, config); err != nil {
+		return fmt.Errorf("unable read config: %w", err)
 	}
 
-	loggerLevel, err := zapcore.ParseLevel(cfg.Logger.InitialLevel)
+	loggerLevel, err := zapcore.ParseLevel(config.Logger.InitialLevel)
 	if err != nil {
 		return fmt.Errorf("wrong logger level: %w", err)
 	}
 	DynamicLevel := zap.NewAtomicLevelAt(loggerLevel)
-	cfg.Logger.DynamicLevel = &DynamicLevel
+	config.Logger.DynamicLevel = &DynamicLevel
+
+	cfg = config
 
 	return nil
 }

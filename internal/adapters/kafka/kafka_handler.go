@@ -3,14 +3,10 @@ package kafka
 import (
 	"context"
 	"github.com/Shopify/sarama"
+	"gitlab.com/g6834/team17/analytics-service/internal/config"
 	ports "gitlab.com/g6834/team17/analytics-service/internal/ports/input"
 	"go.uber.org/zap"
 )
-
-const consumerGroupID = `analytics_group`
-
-var brokers = []string{"localhost:9095", "localhost:9096", "localhost:9097"}
-var topics = []string{"tasks"}
 
 type MsgKafkaConsumer struct {
 	client  *sarama.ConsumerGroup
@@ -36,13 +32,14 @@ func New(service ports.EventService, logger *zap.Logger) *MsgKafkaConsumer {
 
 func (c *MsgKafkaConsumer) StartConsume(ctx context.Context) error {
 	var err error
+	conf := config.GetConfig()
 
 	cfg := sarama.NewConfig()
 	cfg.Version = sarama.V3_0_0_0
 	cfg.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRoundRobin
 	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	client, err := sarama.NewConsumerGroup(brokers, consumerGroupID, cfg)
+	client, err := sarama.NewConsumerGroup(conf.Consumer.Brokers, conf.Consumer.ConsGroupID, cfg)
 	if err != nil {
 		return err
 	}
@@ -50,7 +47,7 @@ func (c *MsgKafkaConsumer) StartConsume(ctx context.Context) error {
 
 	go func() {
 		for {
-			if err := client.Consume(ctx, topics, c.handler); err != nil {
+			if err := client.Consume(ctx, conf.Consumer.Topics, c.handler); err != nil {
 				c.logger.Warn("error consuming message from kafka", zap.Error(err))
 				return
 			}

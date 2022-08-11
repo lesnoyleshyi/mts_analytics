@@ -2,9 +2,7 @@ package app
 
 import (
 	"context"
-	"flag"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/client"
-	grpcServer "gitlab.com/g6834/team17/analytics-service/internal/adapters/grpc/server"
 	httpAdapter "gitlab.com/g6834/team17/analytics-service/internal/adapters/http"
 	"gitlab.com/g6834/team17/analytics-service/internal/adapters/http/business_server"
 	httpInterfaces "gitlab.com/g6834/team17/analytics-service/internal/adapters/http/interfaces"
@@ -21,15 +19,15 @@ import (
 
 var err error
 var logger *zap.Logger
-var storage Storage
+var storage interfaces.Storage
 var responder httpInterfaces.Responder
 var gRPCValidator client.AuthClient
+var messageConsumer interfaces.MessageConsumer
 var businessServer business_server.AdapterHTTP
 var profileServer profile_server.ProfileAdapter
 var documentationServer swagger_server.SwaggerAdapter
-var messageConsumer interfaces.MessageConsumer
 
-const pathToConfigFile = `config.yaml`
+const pathToConfigFile = `./config.yaml`
 
 func Start(ctx context.Context, errChannel chan<- error) {
 	if err := config.ReadConfigYML(pathToConfigFile); err != nil {
@@ -38,21 +36,22 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	cfg := config.GetConfig()
 
 	logger = NewLogger()
-	storage = NewStorage(cfg.DB.Type)
 
 	responder = httpAdapter.NewJSONResponder(logger)
 
 	// perhaps could be hide in NewValidator same way as NewStorage()
 	gRPCValidator = client.NewGrpcAuth()
 	validator := httpAdapter.NewJWTValidator(&gRPCValidator, responder, logger)
+
 	storage = NewStorage(cfg.DB.Type)
+
 	eventService := usecases.NewEventService(storage)
+
+	messageConsumer = NewConsumer(cfg.Consumer.Type, eventService, logger)
 
 	businessServer = business_server.New(eventService, logger, &validator, responder)
 	profileServer = profile_server.NewProfileServer(logger)
 	documentationServer = swagger_server.New()
-
-	messageConsumer = NewConsumer(*consumerType, eventService, logger)
 
 	group, gctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return storage.Connect(gctx) })
@@ -65,7 +64,6 @@ func Start(ctx context.Context, errChannel chan<- error) {
 	logger.Info("application is starting")
 
 	if err = group.Wait(); err != nil {
-		// may be should panic instead of fatal-ing. Is it necessary to call stop() in main.go?
 		logger.Error("application start fail", zap.Error(err))
 		errChannel <- err
 	}

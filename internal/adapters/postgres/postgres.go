@@ -8,9 +8,8 @@ import (
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pressly/goose/v3"
-	"log"
-	"os"
 	"gitlab.com/g6834/team17/analytics-service/internal/config"
+	"log"
 	"net"
 )
 
@@ -28,9 +27,6 @@ var embedMigrations embed.FS
 func (d *Database) Connect(ctx context.Context) error {
 	var err error
 
-	connstr := os.Getenv("PG_CONNSTR")
-
-	connConf, err := pgxpool.ParseConfig(connstr)
 	conf := config.GetConfig()
 	connstr := fmt.Sprintf("postgres://%s:%s@%s/%s",
 		conf.DB.User,
